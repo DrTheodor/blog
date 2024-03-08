@@ -13,7 +13,7 @@
 		data-strict="0"
 		data-reactions-enabled="1"
 		data-emit-metadata="0"
-		data-theme="dark"
+		data-theme={localStorage.getItem('theme') ?? 'light'}
 		data-input-position="bottom"
 		data-loading="lazy"
 		crossorigin="anonymous"
