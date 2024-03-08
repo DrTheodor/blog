@@ -10,7 +10,7 @@ interface SiteConfig {
 
 export const siteConfig: SiteConfig = {
 	author: 'Theo', // Site author
-	title: 'Theo\'s Blog', // Site title.
+	title: `Theo's Blog`, // Site title.
 	description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', // Description to display in the meta tags
 	lang: 'en-US',
 	ogLocale: 'en_US',
