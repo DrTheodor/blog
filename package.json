@@ -12,8 +12,7 @@
 		"format:check": "prettier --plugin-search-dir=. --check .",
 		"format": "prettier --plugin-search-dir=. --write .",
 		"lint": "eslint .",
-		"pre-commit": "lint-staged",
-		"prepare": "husky install"
+		"pre-commit": "lint-staged"
 	},
 	"dependencies": {
 		"@astrojs/rss": "4.0.1",
