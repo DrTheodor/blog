@@ -10,7 +10,7 @@ const isActive = href === pathname || href === pathname.replace(/\/$/, '')
 ---
 
 <a
-	href={import.meta.env.BASE_URL + href}
+	href={href}
 	class={cn(isActive ? 'text-opacity-100' : 'text-opacity-60', className)}
 	rel='noopener noreferrer '
 	{...props}
