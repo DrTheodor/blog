@@ -7,8 +7,8 @@ import Share from '@/components/Share'
 import TableOfContents from '@/components/TableOfContents'
 import { getPosts } from '@/utils'
 import SButton from '@/components/mdx/SButton'
-import Disqus from '@/components/Disqus'
-import { disqusConfig } from '@/data/disqus.config'
+import Giscus from '@/components/Giscus'
+import { giscusConfig } from '@/data/giscus.config'
 
 const posts = await getCollection('blog')
 export async function getStaticPaths() {
@@ -35,7 +35,7 @@ const relatedPosts = getRelatedPosts(post)
 
 const { Content, headings, remarkPluginFrontmatter } = await post.render()
 
-const disqusEnabled = disqusConfig.enabled
+const giscusEnabled = giscusConfig.enabled
 ---
 
 <BlogPost
@@ -67,5 +67,5 @@ const disqusEnabled = disqusConfig.enabled
 		</article>
 	</div>
 
-	{disqusEnabled && <Disqus />}
+	{giscusEnabled && <Giscus />}
 </BlogPost>
