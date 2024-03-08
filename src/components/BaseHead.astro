@@ -14,8 +14,6 @@ const { title, description = siteConfig.description, ogImage, articleDate } = As
 const canonicalURL = new URL(Astro.url.pathname, Astro.site)
 const socialImageURL = new URL(ogImage ? ogImage : '/open-graph.png', Astro.url).href
 
-const siteTitle = `${title} • ${siteConfig.title}`
-
 import { join } from 'path'
 import { AstroFont } from 'astro-font'
 ---
@@ -33,11 +31,9 @@ import { AstroFont } from 'astro-font'
 <link rel='canonical' href={canonicalURL} />
 
 <!-- Primary Meta Tags -->
-<title>{siteTitle}</title>
+<title>{title}</title>
 
-
-
-<meta name='title' content={siteTitle} />
+<meta name='title' content={`${title} • ${siteConfig.title}`} />
 <meta name='description' content={description} />
 <meta name='author' content={siteConfig.author} />
 
