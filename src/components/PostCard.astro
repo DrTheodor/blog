@@ -9,10 +9,12 @@ const {
 	readTime,
 	slug
 } = Astro.props
+
+const url = `${import.meta.env.BASE_URL}/post/${slug}/`;
 ---
 
 <article class='grid grid-rows-[300px_auto] md:grid-rows-[300px_220px] min-h-full group'>
-	<a class='relative overflow-hidden' href={`${import.meta.env.BASE_URL}/post/${slug}/`}>
+	<a class='relative overflow-hidden' href={url}>
 		<Image
 			src={heroImage}
 			width={600}
@@ -52,7 +54,7 @@ const {
 
 		<footer class='flex items-center'>
 			<a
-				href={`${import.meta.env.BASE_URL}/post/${slug}/`}
+				href={url}
 				class='flex justify-center items-center dark:text-white rounded-full hover:translate-x-1 transition-transform duration-150 ease-in-out font-semibold gap-1 group'
 				aria-label={`go to ${title}`}
 			>
