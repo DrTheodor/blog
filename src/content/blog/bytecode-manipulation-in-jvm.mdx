@@ -81,7 +81,8 @@ Here's a quick comparison between the solutions. I would still recommend to read
 | Re-define loaded classes    |      ❌      |   ✅   |
 | Intercept JVM class loading |      ✅      |   ✅   |
 | Define classes              |      ✅      |   ❌   | 
-</br>
+
+
 
 ### 1. ClassLoaders
 ClassLoaders are special classes that handle class loading, and, conveniently, they have a protected method, called `defineClass` which accepts an array of bytes (the bytecode), it's length, offset and the class' name.
