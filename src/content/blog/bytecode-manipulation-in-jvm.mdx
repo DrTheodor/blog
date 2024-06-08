@@ -112,6 +112,14 @@ byte[] bytes = getBytecode();
 Class<?> clazz = loader.defineClass("name/of/the/Class", bytes);
 ```
 
+UPD: You can also use `MethodHandles` to define classes dynamically!
+```java
+MethodHandles.Lookup lookup = MethodHandles.lookup(); // any other way of getting the lookup class will do
+byte[] bytes = getBytecode();
+
+lookup.defineClass(bytes);
+```
+
 #### Intercepting class loading:
 JVM calls the `defineClass` method as well! So if you just insert a check there, you can get away with modifying some class' code.
 
