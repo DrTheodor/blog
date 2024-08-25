@@ -14,13 +14,13 @@ const url = `${import.meta.env.BASE_URL}/post/${slug}/`;
 ---
 
 <article class='grid grid-rows-[300px_auto] md:grid-rows-[300px_220px] min-h-full group'>
-	<a class='relative overflow-hidden' href={url}>
+	<a class='relative overflow-hidden rounded-[16px]' href={url}>
 		<Image
 			src={heroImage}
 			width={600}
 			height={200}
 			format='webp'
-			class='h-full min-w-full object-cover hover:scale-[101%] transition-all duration-200 rounded-[8px]'
+			class='h-full min-w-full object-cover hover:scale-[101%] transition-all duration-200'
 			alt={`img of ${title}`}
 		/>
 
