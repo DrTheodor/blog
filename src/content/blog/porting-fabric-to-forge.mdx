@@ -1,0 +1,194 @@
+---
+title: How I ported a Forge mod to Fabric without rewriting it.
+description: 'An incredibly overcomplicated way of porting Fabric mods to Forge.'
+pubDate: 2024-08-25T22:00:00.000Z
+heroImage: '../../assets/blog-placeholder-0.webp'
+category: Programming
+tags:
+  - Java
+  - Minecraft
+---
+
+Everyone knows that Minecraft Forge sucks.
+
+I'm not a fan of making Forge mods. But unfortunately, the amount of Forge mods that actually add content is quite big, compared to Fabric.
+
+People started using Synitra Connector, a mod that allows to run Fabric mods on Forge (with a biiiit of overhead) which caused numerous problems.
+
+So I decided to find out how hard can it be to port a mod to Forge without actually porting it.
+
+# But how?
+
+To make that happen, we need to understand what's the core difference between a Forge mod and a Fabric mod, which is:
+1. Minecraft mappings.
+Fabric uses Intermediary mappings and Forge uses SRG mappings (MCP? i dont really know and it doesn't really matter).
+2. Metadata.
+Fabric has a `<modid>.mod.json` and Forge uses `mods.toml` and `MANIFEST.MF`.
+
+Metadata is the easiest part. Anyone could write a script to magically turn a `.mod.json` into `mods.toml`. Or do it by hand. But mappings...
+That's the most interesting part!
+
+## Mappings
+
+Intermediary mappings are easy to find. Here's the mapping file for [1.20.1](https://raw.githubusercontent.com/FabricMC/intermediary/master/mappings/1.20.1.tiny).
+
+SRG is a bit harder. I had to go through MCP Config and find the 1.20.1 TSRG mappings (unfortunately I do not have the link on me, but I'm sure you can find it if you search for it).
+
+One problem... the TSRG mappings I found and a decompiled Forge mod that I used as a reference seemed to show that the classnames are from Mojang mappings,
+which complicated the task even more.
+
+Mojang has their own mappings for different versions since 1.14, you can find all you need [here](https://piston-meta.mojang.com/mc/game/version_manifest.json).
+
+Another problem. Mojang mappings come separately: for a client and a server.
+
+## Mapping Thaumaturgy
+To juggle the mapping files I used MappingIO library by FabricMC.
+
+I wrote a class that would:
+1. Join the server and client Mojang mappings.
+2. Remap Intermediary methods and fields to SRG ones (if a mapping exists, otherwise don't translate)
+3. Remap the leftover obfuscated mappings to SRG ones (since intermediary is incomplete, there is a chance you'll stumble upon an obfuscated element)
+4. Remap Intermediary class names to Mojang ones.
+
+I achieved all of this with this code:
+```java
+package dev.drtheo.aitforger.remapper.mappings;
+
+import dev.drtheo.aitforger.remapper.asm.desc.FieldDesc;
+import dev.drtheo.aitforger.remapper.asm.desc.MethodDesc;
+import dev.drtheo.aitforger.remapper.api.MappingProvider;
+import net.fabricmc.mappingio.MappedElementKind;
+import net.fabricmc.mappingio.MappingVisitor;
+import net.fabricmc.mappingio.adapter.ForwardingMappingVisitor;
+import net.fabricmc.mappingio.tree.MappingTree;
+import org.jetbrains.annotations.Nullable;
+
+import java.io.IOException;
+import java.util.List;
+
+// official.accept(Intr2Mcp <- intermediary, mcp)
+public class Intr2McpMappingAdapter extends ForwardingMappingVisitor implements MappingProvider {
+
+    //private final MappingTree official;
+    private final MappingTree intermediary;
+    private final MappingTree mcp;
+
+    public Intr2McpMappingAdapter(MappingVisitor parent, MappingTree intermediary, MappingTree mcp) {
+        super(parent);
+
+        //this.official = official;
+        this.intermediary = intermediary;
+        this.mcp = mcp;
+    }
+
+    @Override
+    public void visitNamespaces(String s, List<String> list) throws IOException {
+        super.visitNamespaces("intermediary", List.of("srg"));
+    }
+
+    //private MappingTree.ClassMapping offClass;
+    private MappingTree.ClassMapping interClass;
+
+    private MappingTree.ClassMapping mcpClass;
+    private MappingTree.FieldMapping mcpField;
+    private MappingTree.MethodMapping mcpMethod;
+
+    @Override
+    public boolean visitClass(String srcName) throws IOException {
+        //this.offClass = this.official.getClass(srcName);
+        this.interClass = this.intermediary.getClass(srcName);
+
+        this.mcpClass = this.mcp.getClass(srcName);
+        return super.visitClass(this.getClass(srcName));
+    }
+
+    @Override
+    public boolean visitField(String srcName, @Nullable String srcDesc) throws IOException {
+        this.mcpField = this.mcpClass.getField(srcName, srcDesc);
+
+        FieldDesc desc = FieldDesc.of(srcName, srcDesc)
+                .remap(this);
+
+        return super.visitField(desc.name(), desc.desc());
+    }
+
+    @Override
+    public boolean visitMethod(String srcName, @Nullable String srcDesc) throws IOException {
+        this.mcpMethod = this.mcpClass.getMethod(srcName, srcDesc);
+
+        MethodDesc desc = MethodDesc.of(srcName, srcDesc)
+                .remap(this);
+
+        return super.visitMethod(desc.name(), desc.desc());
+    }
+
+    @Override
+    public void visitDstName(MappedElementKind targetKind, int namespace, String name) throws IOException {
+        String result = name;
+
+        if (targetKind == MappedElementKind.FIELD)
+            result = this.mcpField.getDstName(0);
+
+        if (targetKind == MappedElementKind.METHOD)
+            result = this.mcpMethod.getDstName(0);
+
+        super.visitDstName(targetKind, namespace, result != null ? result : name);
+    }
+
+    @Override
+    public String getClass(String type) {
+        MappingTree.ClassMapping mapping = this.intermediary.getClass(type);
+
+        if (mapping == null)
+            return type;
+
+        String result = mapping.getDstName(0);
+
+        if (result != null)
+            return result;
+
+        return type;
+    }
+
+    @Override
+    public String getMethod(String ownerName, String name, String desc) {
+        if (this.interClass == null)
+            return name;
+
+        MappingTree.MethodMapping mapping = this.interClass.getMethod(name, desc);
+
+        if (mapping == null)
+            return name;
+
+        String result = mapping.getDstName(0);
+
+        if (result != null)
+            return result;
+
+        return name;
+    }
+
+    @Override
+    public String getField(String ownerName, String name, String desc) {
+        if (this.interClass == null)
+            return name;
+
+        MappingTree.FieldMapping mapping = this.interClass.getField(name, desc);
+
+        if (mapping == null)
+            return name;
+
+        String result = mapping.getDstName(0);
+
+        if (result != null)
+            return result;
+
+        return name;
+    }
+}
+```
+
+To apply the mappings I've used tiny-remapper, also made by the folks at FabricMC.
+And voila! You have a jar that if you run the entrypoint at a proper time, will work on Forge natively, even though it's a Fabric mod.
+
+(todo: add a section about running it properly and unfreezing registries)
